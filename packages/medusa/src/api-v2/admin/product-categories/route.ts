@@ -7,26 +7,14 @@ import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
 } from "@medusajs/utils"
-import { z } from "zod"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "../../../types/routing"
-import { AdminProductCategoriesParamsType } from "./validators"
-
-export const AdminCreateProductCategory = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  handle: z.string().optional(),
-  is_internal: z.boolean().optional(),
-  is_active: z.boolean().optional(),
-  parent_category_id: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
-})
-
-export type AdminCreateProductCategoryType = z.infer<
-  typeof AdminCreateProductCategory
->
+import {
+  AdminCreateProductCategoryType,
+  AdminProductCategoriesParamsType,
+} from "./validators"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminProductCategoriesParamsType>,

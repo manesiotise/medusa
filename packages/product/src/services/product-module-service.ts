@@ -18,7 +18,7 @@ import {
   ProductType,
   ProductVariant,
 } from "@models"
-import { ProductService } from "@services"
+import { ProductCategoryService, ProductService } from "@services"
 
 import {
   arrayDifference,
@@ -52,7 +52,7 @@ type InjectedDependencies = {
   productService: ProductService<any>
   productVariantService: ModulesSdkTypes.InternalModuleService<any, any>
   productTagService: ModulesSdkTypes.InternalModuleService<any>
-  productCategoryService: ModulesSdkTypes.InternalModuleService<any>
+  productCategoryService: ProductCategoryService<any>
   productCollectionService: ModulesSdkTypes.InternalModuleService<any>
   productImageService: ModulesSdkTypes.InternalModuleService<any>
   productTypeService: ModulesSdkTypes.InternalModuleService<any>
@@ -125,7 +125,7 @@ export default class ProductModuleService<
   protected readonly productVariantService_: ModulesSdkTypes.InternalModuleService<TProductVariant>
 
   // eslint-disable-next-line max-len
-  protected readonly productCategoryService_: ModulesSdkTypes.InternalModuleService<TProductCategory>
+  protected readonly productCategoryService_: ProductCategoryService<TProductCategory>
   protected readonly productTagService_: ModulesSdkTypes.InternalModuleService<TProductTag>
   // eslint-disable-next-line max-len
   protected readonly productCollectionService_: ModulesSdkTypes.InternalModuleService<TProductCollection>
@@ -915,11 +915,6 @@ export default class ProductModuleService<
     )
   }
 
-  async createCategory(
-    data: ProductTypes.CreateProductCategoryDTO,
-    sharedContext?: Context
-  ): Promise<ProductTypes.ProductCategoryDTO>
-
   @InjectManager("baseRepository_")
   async createCategory(
     data: ProductTypes.CreateProductCategoryDTO,
@@ -948,7 +943,6 @@ export default class ProductModuleService<
     return productCategory
   }
 
-  // TODO: Update as we add update product category endpoints
   @InjectTransactionManager("baseRepository_")
   async updateCategory(
     categoryId: string,
@@ -958,7 +952,6 @@ export default class ProductModuleService<
     const productCategory = await this.productCategoryService_.update(
       categoryId,
       data,
-      // @ts-ignore
       sharedContext
     )
 
