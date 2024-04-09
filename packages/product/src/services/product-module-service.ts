@@ -18,7 +18,7 @@ import {
   ProductType,
   ProductVariant,
 } from "@models"
-import { ProductCategoryService, ProductService } from "@services"
+import { ProductService } from "@services"
 
 import {
   arrayDifference,
@@ -52,7 +52,7 @@ type InjectedDependencies = {
   productService: ProductService<any>
   productVariantService: ModulesSdkTypes.InternalModuleService<any, any>
   productTagService: ModulesSdkTypes.InternalModuleService<any>
-  productCategoryService: ProductCategoryService<any>
+  productCategoryService: ModulesSdkTypes.InternalModuleService<any>
   productCollectionService: ModulesSdkTypes.InternalModuleService<any>
   productImageService: ModulesSdkTypes.InternalModuleService<any>
   productTypeService: ModulesSdkTypes.InternalModuleService<any>
@@ -125,7 +125,7 @@ export default class ProductModuleService<
   protected readonly productVariantService_: ModulesSdkTypes.InternalModuleService<TProductVariant>
 
   // eslint-disable-next-line max-len
-  protected readonly productCategoryService_: ProductCategoryService<TProductCategory>
+  protected readonly productCategoryService_: ModulesSdkTypes.InternalModuleService<TProductCategory>
   protected readonly productTagService_: ModulesSdkTypes.InternalModuleService<TProductTag>
   // eslint-disable-next-line max-len
   protected readonly productCollectionService_: ModulesSdkTypes.InternalModuleService<TProductCollection>
@@ -915,11 +915,26 @@ export default class ProductModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  async createCategory(
+    data: ProductTypes.CreateProductCategoryDTO,
+    sharedContext?: Context
+  ): Promise<ProductTypes.ProductCategoryDTO>
+
+  @InjectManager("baseRepository_")
   async createCategory(
     data: ProductTypes.CreateProductCategoryDTO,
     @MedusaContext() sharedContext: Context = {}
   ): Promise<ProductTypes.ProductCategoryDTO> {
+    const result = await this.createCategory_(data, sharedContext)
+
+    return await this.baseRepository_.serialize(result)
+  }
+
+  @InjectTransactionManager("baseRepository_")
+  async createCategory_(
+    data: ProductTypes.CreateProductCategoryDTO,
+    @MedusaContext() sharedContext: Context = {}
+  ): Promise<ProductCategory> {
     const productCategory = await this.productCategoryService_.create(
       data,
       sharedContext
@@ -930,11 +945,10 @@ export default class ProductModuleService<
       { id: productCategory.id }
     )
 
-    return await this.baseRepository_.serialize(productCategory, {
-      populate: true,
-    })
+    return productCategory
   }
 
+  // TODO: Update as we add update product category endpoints
   @InjectTransactionManager("baseRepository_")
   async updateCategory(
     categoryId: string,
@@ -944,6 +958,7 @@ export default class ProductModuleService<
     const productCategory = await this.productCategoryService_.update(
       categoryId,
       data,
+      // @ts-ignore
       sharedContext
     )
 
@@ -1115,8 +1130,10 @@ export default class ProductModuleService<
     data: ProductTypes.CreateProductDTO[],
     @MedusaContext() sharedContext: Context = {}
   ): Promise<TProduct[]> {
-    const normalizedInput = await Promise.all(
-      data.map((d) => this.normalizeCreateProductInput(d, sharedContext))
+    const normalizedInput = await promiseAll(
+      data.map(
+        async (d) => await this.normalizeCreateProductInput(d, sharedContext)
+      )
     )
 
     const productData = await this.productService_.upsertWithReplace(
@@ -1171,8 +1188,10 @@ export default class ProductModuleService<
     data: UpdateProductInput[],
     @MedusaContext() sharedContext: Context = {}
   ): Promise<TProduct[]> {
-    const normalizedInput = await Promise.all(
-      data.map((d) => this.normalizeUpdateProductInput(d, sharedContext))
+    const normalizedInput = await promiseAll(
+      data.map(
+        async (d) => await this.normalizeUpdateProductInput(d, sharedContext)
+      )
     )
 
     const productData = await this.productService_.upsertWithReplace(
@@ -1258,7 +1277,8 @@ export default class ProductModuleService<
     @MedusaContext() sharedContext: Context = {}
   ): Promise<ProductTypes.CreateProductDTO> {
     const productData = (await this.normalizeUpdateProductInput(
-      product as UpdateProductInput
+      product as UpdateProductInput,
+      sharedContext
     )) as ProductTypes.CreateProductDTO
 
     if (!productData.handle && productData.title) {
